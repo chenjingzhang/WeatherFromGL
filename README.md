@@ -13,7 +13,7 @@ A1.ViewModel:1专门存放与界面相关的数据，只要是界面能看到的
  viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)  
  var toString = viewModel.count.toString()
  
- (####不可以直接去创建viewModel的实例，一定要通过ViewModelProviders来获取viewModel的实例，因为viewmodel有独立的生命周期，且生命周期长于Activity,如果在onCreate()获取viewModel的实例，那么每次onCreate()执行的时候，viewModel都会创建一个新的实例，这样当手机屏幕旋转的时候，就无法保 留里面的数据了*******)
+ (####不可以直接去创建viewModel的实例，一定要通过ViewModelProviders来获取viewModel的实例，因为viewmodel有独立的生命周期，且生命周期长于Activity,如果在onCreate()获取viewModel的实例，那么每次onCreate()执行的时候，viewModel都会创建一个新的实例，这样当手机屏幕旋转的时候，就无法保 留里面的数据了 ####)
 
 A2 向viewModel中传递数据
 
@@ -65,7 +65,7 @@ A2 向viewModel中传递数据
     }
 
 
-A3
+B
 Lifecycles 感知 activity fragment 的生命周期
 
 
@@ -102,71 +102,14 @@ class MyObserver2(val lifecycle:Lifecycle):LifecycleObserver{
  var currentState = lifecycle.currentState
  lifecycle.addObserver(observer2)
 
+C：LiveData 是Jetpack提供的一种响应式编程组件，可以包含任何类型的数据，并在数据发生变化的时候通知给观察者
+
+（##viewModel的生命周期是长于Activity的，如果把Activity的实例传递给ViewModel,就很可能因为Activity无法释放造成内存泄漏）
+
+setValue()用于给LiveData设置数据，但是只能在主线程中调用
+postValue()用于在非主线程.
 
 
-object KS{
 
-    private var keyStore: KeyStore = KeyStore.getInstance("AndroidKeyStore").also { it.load(null) }
-   
-    init {
-       getKeyPair()
-    }
 
-    private fun getKeyPair() {
-        val kpg = KeyPairGenerator.getInstance(  KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore"  )
-        kpg.initialize(
-            KeyGenParameterSpec.Builder(
-                "ALIAS",
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-            )
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
-                .setDigests(
-                    KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512
-                ).build()
-        )
-        kpg.generateKeyPair()
-    }
 
-    private fun containsAlias(): Boolean {
-        if (TextUtils.isEmpty("ALIAS")) {
-            return false
-        }
-        var contains = false
-        try {
-            contains = keyStore.containsAlias("ALIAS")
-        } catch (e: java.lang.Exception) {
-            e.printStackTrace()
-        }
-        return contains
-    }
-
-    fun encode(content: String?): ByteArray? {
-        if (content == null) {
-            return null
-        }
-        try {
-            val publicKey = keyStore.getCertificate("ALIAS").publicKey
-            val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
-            cipher.init(Cipher.ENCRYPT_MODE, publicKey)
-            return cipher.doFinal(content.toByteArray())
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return null
-    }
-
-    fun decode(data: ByteArray?): String? {
-        if (data == null) {
-            return null
-        }
-        try {
-            val entry = keyStore.getEntry("ALIAS", null)
-            val privateKeyEntry = entry as KeyStore.PrivateKeyEntry
-            val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
-            cipher.init(Cipher.DECRYPT_MODE, privateKeyEntry.privateKey)
-            return String(cipher.doFinal(data))
-        } catch (e:Exception) {
-            e.printStackTrace()
-        }
-        return null
-    }}
